@@ -16,7 +16,10 @@ public class TitleBasics {
     private String tconst;
 
     private String titleType;
+    @Column(name = "primary_title", length = 512)
     private String primaryTitle;
+
+    @Column(name = "original_title", length = 512)
     private String originalTitle;
     private boolean isAdult;
     private Integer startYear;
