@@ -11,13 +11,16 @@ import java.util.List;
 @Repository
 public interface TitleBasicsRepository extends JpaRepository<TitleBasics, String> {
 
-    @Query("SELECT t FROM TitleBasics t " +
-            "JOIN TitlePrincipals p1 ON t.tconst = p1.titleBasics.tconst " +
-            "JOIN TitlePrincipals p2 ON t.tconst = p2.titleBasics.tconst " +
-            "JOIN p1.nameBasics n " +
-            "JOIN p2.nameBasics n2 " +
-            "WHERE p1.category.name = 'director' AND p2.category.name = 'writer' AND n = n2 AND n.deathYear IS NULL")
+    @Query("SELECT DISTINCT t FROM TitleBasics t " +
+            "JOIN t.principals p1 " +
+            "JOIN t.principals p2 " +
+            "WHERE p1.category.name = 'director' " +
+            "AND p2.category.name = 'writer' " +
+            "AND p1.nameBasics = p2.nameBasics " +
+            "AND p1.nameBasics.deathYear IS NULL")
     List<TitleBasics> findTitlesWithSameDirectorAndWriterAlive();
+
+
 
 
     @Query("SELECT t FROM TitleBasics t " +

@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.BufferedReader;
@@ -20,7 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
-//@Service
+@Service
 public class DataLoaderService {
     private static final Logger logger = LoggerFactory.getLogger(DataLoaderService.class);
 
@@ -29,9 +30,6 @@ public class DataLoaderService {
 
     @Autowired
     private TitleAkasRepository titleAkasRepository;
-
-    @Autowired
-    private TitleCrewRepository titleCrewRepository;
 
     @Autowired
     private TitleEpisodeRepository titleEpisodeRepository;
@@ -62,7 +60,6 @@ public class DataLoaderService {
         try {
             loadTitleBasics();
             loadTitleAkas();
-            loadTitleCrew();
             loadTitleEpisode();
             loadTitlePrincipals();
             loadTitleRatings();
@@ -139,24 +136,6 @@ public class DataLoaderService {
                 titleAkas.setOriginalTitle(fields[7].equals("1"));
                 titleAkas.setTitleBasics(titleBasicsRepository.getReferenceById(fields[0]));
                 titleAkasRepository.save(titleAkas);
-            }
-        }
-    }
-
-    private void loadTitleCrew() throws Exception {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, "title.crew.tsv.gz").toFile()))))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                // Skip the header line
-                if (line.startsWith("tconst")) {
-                    continue;
-                }
-                String[] fields = line.split("\t");
-                TitleCrew titleCrew = new TitleCrew();
-                titleCrew.setTitleBasics(titleBasicsRepository.getReferenceById(fields[0]));
-                titleCrew.setDirectors(fields[1].equals("\\N") ? null : nameBasicsRepository.findAllById(List.of(fields[1].split(","))));
-                titleCrew.setWriters(fields[2].equals("\\N") ? null : nameBasicsRepository.findAllById(List.of(fields[2].split(","))));
-                titleCrewRepository.save(titleCrew);
             }
         }
     }
@@ -259,7 +238,6 @@ public class DataLoaderService {
                     return categoryRepository.save(category);
                 });
     }
-
 
 
 }

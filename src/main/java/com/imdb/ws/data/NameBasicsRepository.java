@@ -11,7 +11,9 @@ import java.util.List;
 public interface NameBasicsRepository extends JpaRepository<NameBasics, String> {
 
     @Query("SELECT nb FROM NameBasics nb " +
-            "JOIN TitleCrew tc ON nb member of tc.directors OR nb member of tc.writers " +
-            "WHERE tc.titleBasics.tconst = :tconst")
+            "JOIN TitlePrincipals tp ON tp.nameBasics.nconst = nb.nconst " +
+            "WHERE tp.titleBasics.tconst = :tconst " +
+            "AND (tp.category.name = 'director' OR tp.category.name = 'writer')")
     List<NameBasics> findDirectorsAndWritersByTconst(@Param("tconst") String tconst);
+
 }

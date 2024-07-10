@@ -2,11 +2,11 @@ package com.imdb.ws;
 
 import com.imdb.ws.data.NameBasicsRepository;
 import com.imdb.ws.data.TitleBasicsRepository;
-import com.imdb.ws.data.TitleCrewRepository;
 import com.imdb.ws.entity.NameBasics;
 import com.imdb.ws.entity.TitleBasics;
-import com.imdb.ws.entity.TitleCrew;
+import com.imdb.ws.entity.TitlePrincipals;
 import com.imdb.ws.service.TestDataLoaderService;
+import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,9 +29,6 @@ public class ApplicationTests {
     @Autowired
     private NameBasicsRepository nameBasicsRepository;
     @Autowired
-    private TitleCrewRepository titleCrewRepository;
-
-    @Autowired
     private TestDataLoaderService testDataLoaderService;
 
     @BeforeEach
@@ -47,14 +44,15 @@ public class ApplicationTests {
 
     @Test
     public void testFindTitlesWithSameDirectorAndWriterAlive() {
-        List<TitleCrew> all = titleCrewRepository.findAll();
-
         List<TitleBasics> titles = titleBasicsRepository.findTitlesWithSameDirectorAndWriterAlive();
+
         // Assertions or checks on the retrieved titles
         Assertions.assertNotNull(titles);
         Assertions.assertFalse(titles.isEmpty());
-        // Add more assertions as needed
     }
+
+
+
 
     //    @Test
     public void testFindCommonTitles() {

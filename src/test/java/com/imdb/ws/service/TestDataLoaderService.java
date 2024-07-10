@@ -2,7 +2,6 @@ package com.imdb.ws.service;
 
 import com.imdb.ws.data.*;
 import com.imdb.ws.entity.*;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,8 +21,6 @@ public class TestDataLoaderService {
     private TitleBasicsRepository titleBasicsRepository;
     @Autowired
     private TitleAkasRepository titleAkasRepository;
-    @Autowired
-    private TitleCrewRepository titleCrewRepository;
     @Autowired
     private TitleEpisodeRepository titleEpisodeRepository;
     @Autowired
@@ -53,7 +50,6 @@ public class TestDataLoaderService {
         animGenre.setName("Animation");
         genreRepository.save(animGenre);
 
-
         // Create TitleBasics entries
         TitleBasics titleBasics1 = new TitleBasics();
         titleBasics1.setTconst("tt0000001");
@@ -77,17 +73,6 @@ public class TestDataLoaderService {
 
         titleBasicsRepository.saveAll(Arrays.asList(titleBasics1, titleBasics2));
 
-        TitleBasics titleBasics3 = new TitleBasics();
-        titleBasics3.setTconst("tt0000002");
-        titleBasics3.setTitleType("short");
-        titleBasics3.setPrimaryTitle("Le clown et ses chiens");
-        titleBasics3.setOriginalTitle("Le clown et ses chiens");
-        titleBasics3.setAdult(false);
-        titleBasics3.setStartYear(1892);
-        titleBasics3.setRuntimeMinutes(5);
-        titleBasics3.setGenres(new HashSet<>(List.of(docGenre, animGenre)));
-
-        titleBasicsRepository.save(titleBasics3);
         // Create TitleAkas entries
         TitleAkas titleAkas1 = new TitleAkas();
         titleAkas1.setTitleBasics(titleBasics1);
@@ -112,7 +97,6 @@ public class TestDataLoaderService {
         nameBasics1.setNconst("nm0000001");
         nameBasics1.setPrimaryName("Fred Astaire");
         nameBasics1.setBirthYear(1899);
-//        nameBasics1.setDeathYear(1987);
         nameBasics1.setPrimaryProfession(Arrays.asList("soundtrack", "actor", "miscellaneous"));
         nameBasics1.setKnownForTitles(Arrays.asList("tt0000001", "tt0000002"));
 
@@ -120,33 +104,18 @@ public class TestDataLoaderService {
         nameBasics2.setNconst("nm0000002");
         nameBasics2.setPrimaryName("Lauren Bacall");
         nameBasics2.setBirthYear(1924);
-//        nameBasics2.setDeathYear(2014);
         nameBasics2.setPrimaryProfession(Arrays.asList("actress", "soundtrack"));
         nameBasics2.setKnownForTitles(Arrays.asList("tt0000001"));
-
-        nameBasicsRepository.saveAll(Arrays.asList(nameBasics1, nameBasics2));
 
         NameBasics nameBasics3 = new NameBasics();
         nameBasics3.setNconst("nm0000003");
         nameBasics3.setPrimaryName("Alizadeh");
         nameBasics3.setBirthYear(1924);
-//        nameBasics3.setDeathYear(2014);
         nameBasics3.setPrimaryProfession(Arrays.asList("writer", "director"));
         nameBasics3.setKnownForTitles(Arrays.asList("tt0000001"));
-        nameBasicsRepository.save(nameBasics3);
+        // Ensure nameBasics3 is alive (no deathYear set)
 
-        // Create TitleCrew entries
-        TitleCrew titleCrew1 = new TitleCrew();
-        titleCrew1.setTitleBasics(titleBasics1);
-        titleCrew1.setDirectors(Arrays.asList(nameBasics1));
-        titleCrew1.setWriters(Arrays.asList(nameBasics2));
-
-        TitleCrew titleCrew2 = new TitleCrew();
-        titleCrew2.setTitleBasics(titleBasics2);
-        titleCrew2.setDirectors(Arrays.asList(nameBasics1));
-        titleCrew2.setWriters(Arrays.asList(nameBasics2));
-
-        titleCrewRepository.saveAll(Arrays.asList(titleCrew1, titleCrew2));
+        nameBasicsRepository.saveAll(Arrays.asList(nameBasics1, nameBasics2, nameBasics3));
 
         // Create TitleEpisode entries
         TitleEpisode titleEpisode1 = new TitleEpisode();
@@ -162,46 +131,39 @@ public class TestDataLoaderService {
         titleEpisode2.setParentTitle(titleBasics2);
 
         titleEpisodeRepository.saveAll(Arrays.asList(titleEpisode1, titleEpisode2));
-        // Create Category entries
-
-
 
         // Create TitlePrincipals entries
         TitlePrincipals titlePrincipals1 = new TitlePrincipals();
         titlePrincipals1.setTitleBasics(titleBasics1);
         titlePrincipals1.setOrdering(1);
         titlePrincipals1.setNameBasics(nameBasics1);
-        titlePrincipals1.setCategory(getOrCreateCategory(ACTOR));
+        titlePrincipals1.setCategory(getOrCreateCategory("actor"));
 
         TitlePrincipals titlePrincipals2 = new TitlePrincipals();
         titlePrincipals2.setTitleBasics(titleBasics2);
         titlePrincipals2.setOrdering(2);
         titlePrincipals2.setNameBasics(nameBasics2);
-        titlePrincipals2.setCategory(getOrCreateCategory(DIRECTOR));
+        titlePrincipals2.setCategory(getOrCreateCategory("director"));
 
-        titlePrincipalsRepository.saveAll(Arrays.asList(titlePrincipals1, titlePrincipals2));
-
-        // Create TitlePrincipals entries
         TitlePrincipals titlePrincipals3 = new TitlePrincipals();
-        titlePrincipals3.setTitleBasics(titleBasics3);
+        titlePrincipals3.setTitleBasics(titleBasics1);
         titlePrincipals3.setOrdering(1);
         titlePrincipals3.setNameBasics(nameBasics3);
-        titlePrincipals3.setCategory(getOrCreateCategory(WRITER));
+        titlePrincipals3.setCategory(getOrCreateCategory("writer"));
 
-        TitlePrincipals titlePrincipals4= new TitlePrincipals();
-        titlePrincipals4.setTitleBasics(titleBasics3);
+        TitlePrincipals titlePrincipals4 = new TitlePrincipals();
+        titlePrincipals4.setTitleBasics(titleBasics1);
         titlePrincipals4.setOrdering(2);
         titlePrincipals4.setNameBasics(nameBasics3);
-        titlePrincipals4.setCategory(getOrCreateCategory(DIRECTOR));
+        titlePrincipals4.setCategory(getOrCreateCategory("director"));
 
-        titlePrincipalsRepository.saveAll(Arrays.asList(titlePrincipals1, titlePrincipals2));
+        titlePrincipalsRepository.saveAll(Arrays.asList(titlePrincipals1, titlePrincipals2, titlePrincipals3, titlePrincipals4));
 
         // Create TitleRatings entries
         createOrUpdateTitleRating("tt0000001", 5.6, 1500);
         createOrUpdateTitleRating("tt0000002", 6.3, 800);
-
-
     }
+
 
     private Category getOrCreateCategory(String categoryName) {
         return categoryRepository.findByName(categoryName)
