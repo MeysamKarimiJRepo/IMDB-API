@@ -18,7 +18,7 @@ public class ImdbApiApplication {
     public FilterRegistrationBean<RequestCountFilter> loggingFilter(RequestCountService requestCountService) {
         FilterRegistrationBean<RequestCountFilter> registrationBean = new FilterRegistrationBean<>();
         registrationBean.setFilter(new RequestCountFilter(requestCountService));
-        registrationBean.addUrlPatterns("/api/*");
+        registrationBean.addUrlPatterns("/api/titles/*");
         return registrationBean;
     }
 

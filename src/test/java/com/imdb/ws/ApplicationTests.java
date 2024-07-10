@@ -13,6 +13,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.List;
 
@@ -95,5 +97,12 @@ public class ApplicationTests {
         mockMvc.perform(get("/api/titles/best-titles")
                         .param("genre", genre))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testCounterWebService() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/metrics/request-count"))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.content().string("3")); // Assuming 3 requests were made
     }
 }
