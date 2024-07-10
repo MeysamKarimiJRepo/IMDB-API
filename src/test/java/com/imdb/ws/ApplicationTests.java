@@ -4,9 +4,7 @@ import com.imdb.ws.data.NameBasicsRepository;
 import com.imdb.ws.data.TitleBasicsRepository;
 import com.imdb.ws.entity.NameBasics;
 import com.imdb.ws.entity.TitleBasics;
-import com.imdb.ws.entity.TitlePrincipals;
 import com.imdb.ws.service.TestDataLoaderService;
-import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,16 +12,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(locations = "classpath:application-test.properties")
 public class ApplicationTests {
 
+
+    @Autowired
+    private MockMvc mockMvc;
     @Autowired
     private TitleBasicsRepository titleBasicsRepository;
     @Autowired
@@ -46,22 +51,17 @@ public class ApplicationTests {
     public void testFindTitlesWithSameDirectorAndWriterAlive() {
         List<TitleBasics> titles = titleBasicsRepository.findTitlesWithSameDirectorAndWriterAlive();
 
-        // Assertions or checks on the retrieved titles
         Assertions.assertNotNull(titles);
         Assertions.assertFalse(titles.isEmpty());
     }
 
 
-
-
-    //    @Test
+    @Test
     public void testFindCommonTitles() {
         String actor1 = "nm0000001";
         String actor2 = "nm0000002";
         List<TitleBasics> titles = titleBasicsRepository.findCommonTitles(actor1, actor2);
-        // Assertions or checks on the retrieved titles
         Assertions.assertNotNull(titles);
-        // Add more assertions as needed
     }
 
     @Test
@@ -71,5 +71,29 @@ public class ApplicationTests {
 
         assertThat(titles).isNotEmpty();
         titles.forEach(title -> System.out.println(title.getPrimaryTitle()));
+    }
+
+    @Test
+    public void testFindTitlesWithSameDirectorAndWriterAliveAPI() throws Exception {
+        mockMvc.perform(get("/api/titles/director-writer-alive"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testFindCommonTitlesAPI() throws Exception {
+        String actor1 = "nm0000001";
+        String actor2 = "nm0000002";
+        mockMvc.perform(get("/api/titles/common-titles")
+                        .param("actor1", actor1)
+                        .param("actor2", actor2))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testFindBestTitlesByGenreAPI() throws Exception {
+        String genre = "Short";
+        mockMvc.perform(get("/api/titles/best-titles")
+                        .param("genre", genre))
+                .andExpect(status().isOk());
     }
 }

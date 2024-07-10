@@ -4,7 +4,6 @@ package com.imdb.ws.filter;
 import com.imdb.ws.service.RequestCountService;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -12,13 +11,16 @@ import java.io.IOException;
 @Component
 public class RequestCountFilter implements Filter {
 
-    @Autowired
-    private RequestCountService requestCountService;
 
+    private final RequestCountService requestCountService;
+
+    public RequestCountFilter(RequestCountService requestCountService) {
+        this.requestCountService = requestCountService;
+    }
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        // Initialization code if needed
+        //TODO: Initialization code needed
     }
 
     @Override
@@ -31,7 +33,7 @@ public class RequestCountFilter implements Filter {
 
     @Override
     public void destroy() {
-        // Cleanup code if needed
+        //TODO: Cleanup code if needed
     }
 }
 
