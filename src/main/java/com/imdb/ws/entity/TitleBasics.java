@@ -2,7 +2,10 @@ package com.imdb.ws.entity;
 
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * reviewed
@@ -26,20 +29,23 @@ public class TitleBasics {
     private Integer endYear;
     private Integer runtimeMinutes;
 
-    @ElementCollection
-    private List<String> genres;
+    @ManyToMany
+    @JoinTable(name = "title_genres",
+            joinColumns = @JoinColumn(name = "tconst"),
+            inverseJoinColumns = @JoinColumn(name = "genre_id"))
+    private Set<Genre> genres = new HashSet<>();
 
     @OneToMany(mappedBy = "titleBasics")
     private List<TitleAkas> akas;
 
-    @OneToMany(mappedBy = "titleBasics")
-    private List<TitleCrew> crew;
+//    @OneToMany(mappedBy = "titleBasics")
+//    private List<TitleCrew> crew;
 
     @OneToMany(mappedBy = "titleBasics")
     private List<TitlePrincipals> principals;
 
     @OneToMany(mappedBy = "parentTitle", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TitleEpisode> episodes;
+    private List<TitleEpisode> episodes = new ArrayList<>();
 
     @OneToOne(mappedBy = "titleBasics")
     private TitleRatings ratings;
@@ -108,11 +114,11 @@ public class TitleBasics {
         this.runtimeMinutes = runtimeMinutes;
     }
 
-    public List<String> getGenres() {
+    public Set<Genre> getGenres() {
         return genres;
     }
 
-    public void setGenres(List<String> genres) {
+    public void setGenres(Set<Genre> genres) {
         this.genres = genres;
     }
 
@@ -124,13 +130,13 @@ public class TitleBasics {
         this.akas = akas;
     }
 
-    public List<TitleCrew> getCrew() {
-        return crew;
-    }
-
-    public void setCrew(List<TitleCrew> crew) {
-        this.crew = crew;
-    }
+//    public List<TitleCrew> getCrew() {
+//        return crew;
+//    }
+//
+//    public void setCrew(List<TitleCrew> crew) {
+//        this.crew = crew;
+//    }
 
     public List<TitleEpisode> getEpisodes() {
         return episodes;

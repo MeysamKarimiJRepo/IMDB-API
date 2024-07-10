@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 
 import java.util.List;
 
+/**
+ * Created from name_basics
+ */
 @Entity
 @Table(name = "name_basics")
 public class NameBasics {
@@ -25,11 +28,11 @@ public class NameBasics {
     @OneToMany(mappedBy = "nameBasics")
     private List<TitlePrincipals> principals;
 
-    @ManyToMany(mappedBy = "directors")
-    private List<TitleCrew> directedTitles;
+//    @ManyToMany(mappedBy = "directors")
+//    private List<TitleCrew> directedTitles;
 
-    @ManyToMany(mappedBy = "writers")
-    private List<TitleCrew> writtenTitles;
+//    @ManyToMany(mappedBy = "writers")
+//    private List<TitleCrew> writtenTitles;
 
     public String getNconst() {
         return nconst;
@@ -87,19 +90,19 @@ public class NameBasics {
         this.principals = principals;
     }
 
-    public List<TitleCrew> getDirectedTitles() {
-        return directedTitles;
-    }
-
-    public void setDirectedTitles(List<TitleCrew> directedTitles) {
-        this.directedTitles = directedTitles;
-    }
-
-    public List<TitleCrew> getWrittenTitles() {
-        return writtenTitles;
-    }
-
-    public void setWrittenTitles(List<TitleCrew> writtenTitles) {
-        this.writtenTitles = writtenTitles;
-    }
+//    public List<TitleCrew> getDirectedTitles() {
+//        return directedTitles;
+//    }
+//
+//    public void setDirectedTitles(List<TitleCrew> directedTitles) {
+//        this.directedTitles = directedTitles;
+//    }
+//
+//    public List<TitleCrew> getWrittenTitles() {
+//        return writtenTitles;
+//    }
+//
+//    public void setWrittenTitles(List<TitleCrew> writtenTitles) {
+//        this.writtenTitles = writtenTitles;
+//    }
 }

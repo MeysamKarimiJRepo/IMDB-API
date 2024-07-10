@@ -3,20 +3,26 @@ package com.imdb.ws.service;
 import com.imdb.ws.data.*;
 import com.imdb.ws.entity.*;
 import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
-@Service
+//@Service
 public class DataLoaderService {
+    private static final Logger logger = LoggerFactory.getLogger(DataLoaderService.class);
 
     @Autowired
     private TitleBasicsRepository titleBasicsRepository;
@@ -39,12 +45,20 @@ public class DataLoaderService {
     @Autowired
     private NameBasicsRepository nameBasicsRepository;
 
+    @Autowired
+    private CategoryRepository categoryRepository;
+
+    @Autowired
+    private GenreRepository genreRepository;
+
     @Value("${dataset.folder.path}")
     private String datasetFolderPath;
 
     @PostConstruct
     @Transactional
     public void loadData() {
+        Instant start = Instant.now();
+
         try {
             loadTitleBasics();
             loadTitleAkas();
@@ -55,10 +69,15 @@ public class DataLoaderService {
             loadNameBasics();
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            Instant end = Instant.now();
+            Duration duration = Duration.between(start, end);
+            logger.info("Data loading completed in {} seconds", duration.getSeconds());
         }
     }
 
     private void loadTitleBasics() throws Exception {
+        HashSet<String> genres = new HashSet<>();
         try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, "title.basics.tsv.gz").toFile()))))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -76,7 +95,26 @@ public class DataLoaderService {
                 titleBasics.setStartYear(fields[5].equals("\\N") ? null : Integer.parseInt(fields[5]));
                 titleBasics.setEndYear(fields[6].equals("\\N") ? null : Integer.parseInt(fields[6]));
                 titleBasics.setRuntimeMinutes(fields[7].equals("\\N") ? null : Integer.parseInt(fields[7]));
-                titleBasics.setGenres(fields[8].equals("\\N") ? null : List.of(fields[8].split(",")));
+                List<String> genresOfTitle = fields[8].equals("\\N") ? null : List.of(fields[8].split(","));
+                Genre genre = null;
+
+                if (genresOfTitle != null) {
+                    Set<Genre> genreList = new HashSet<>();
+                    for (String genreName : genresOfTitle) {
+                        if (!genres.contains(genre)) {
+                            genre = new Genre();
+                            genre.setName(genreName);
+                            genre = genreRepository.save(genre);
+                            genres.add(genreName);
+                        } else {
+                            genre = genreRepository.findByName(genreName);
+                        }
+                        genreList.add(genre);
+                    }
+                    titleBasics.setGenres(genreList);
+                }
+
+
                 titleBasicsRepository.save(titleBasics);
             }
         }
@@ -143,6 +181,7 @@ public class DataLoaderService {
     }
 
     private void loadTitlePrincipals() throws Exception {
+        HashSet<String> categories = new HashSet<>();
         try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, "title.principals.tsv.gz").toFile()))))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -155,7 +194,17 @@ public class DataLoaderService {
                 titlePrincipals.setOrdering(Integer.parseInt(fields[1]));
                 titlePrincipals.setTitleBasics(titleBasicsRepository.getReferenceById(fields[0]));
                 titlePrincipals.setNameBasics(nameBasicsRepository.getReferenceById(fields[2]));
-                titlePrincipals.setCategory(fields[3]);
+                String CategoryName = fields[3];
+                Category category = null;
+                if (!categories.contains(CategoryName)) {
+                    category = new Category();
+                    category.setName(CategoryName);
+                    category = categoryRepository.save(category);
+                    categories.add(CategoryName);
+                } else {
+                    category = getOrCreateCategory(CategoryName);
+                }
+                titlePrincipals.setCategory(category);
                 titlePrincipals.setJob(fields[4].equals("\\N") ? null : fields[4]);
                 titlePrincipals.setCharacters(fields[5].equals("\\N") ? null : fields[5]);
                 titlePrincipalsRepository.save(titlePrincipals);
@@ -201,4 +250,16 @@ public class DataLoaderService {
             }
         }
     }
+
+    private Category getOrCreateCategory(String categoryName) {
+        return categoryRepository.findByName(categoryName)
+                .orElseGet(() -> {
+                    Category category = new Category();
+                    category.setName(categoryName);
+                    return categoryRepository.save(category);
+                });
+    }
+
+
+
 }
