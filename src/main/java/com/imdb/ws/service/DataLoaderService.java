@@ -26,7 +26,7 @@ public class DataLoaderService {
     private static final Logger logger = LoggerFactory.getLogger(DataLoaderService.class);
 
     @Autowired
-    private TitleBasicsRepository titleBasicsRepository;
+    private TitleBasicRepository titleBasicRepository;
 
     @Autowired
     private TitleAkasRepository titleAkasRepository;
@@ -35,13 +35,13 @@ public class DataLoaderService {
     private TitleEpisodeRepository titleEpisodeRepository;
 
     @Autowired
-    private TitlePrincipalsRepository titlePrincipalsRepository;
+    private TitlePrincipalRepository titlePrincipalRepository;
 
     @Autowired
-    private TitleRatingsRepository titleRatingsRepository;
+    private TitleRatingRepository titleRatingRepository;
 
     @Autowired
-    private NameBasicsRepository nameBasicsRepository;
+    private PersonRepository personRepository;
 
     @Autowired
     private CategoryRepository categoryRepository;
@@ -52,24 +52,31 @@ public class DataLoaderService {
     @Value("${dataset.folder.path}")
     private String datasetFolderPath;
 
+    @Value("${loadDataFromDataSet}")
+    private boolean loadDataFromDataSet;
+
     @PostConstruct
     @Transactional
     public void loadData() {
-        Instant start = Instant.now();
+        if (loadDataFromDataSet) {
+            Instant start = Instant.now();
 
-        try {
-            loadTitleBasics();
-            loadTitleAkas();
-            loadTitleEpisode();
-            loadTitlePrincipals();
-            loadTitleRatings();
-            loadNameBasics();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            Instant end = Instant.now();
-            Duration duration = Duration.between(start, end);
-            logger.info("Data loading completed in {} seconds", duration.getSeconds());
+            try {
+                loadTitleBasics();
+                loadTitleAkas();
+                loadTitleEpisode();
+                loadTitlePrincipals();
+                loadTitleRatings();
+                loadNameBasics();
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                Instant end = Instant.now();
+                Duration duration = Duration.between(start, end);
+                logger.info("Data loading completed in {} seconds", duration.getSeconds());
+            }
+        } else {
+            logger.info("The loadDataFromDataSet setting in the properties file set to false, So data will not be loaded from dataset");
         }
     }
 
@@ -83,15 +90,15 @@ public class DataLoaderService {
                     continue;
                 }
                 String[] fields = line.split("\t");
-                TitleBasics titleBasics = new TitleBasics();
-                titleBasics.setTconst(fields[0]);
-                titleBasics.setTitleType(fields[1]);
-                titleBasics.setPrimaryTitle(fields[2]);
-                titleBasics.setOriginalTitle(fields[3]);
-                titleBasics.setAdult(fields[4].equals("1"));
-                titleBasics.setStartYear(fields[5].equals("\\N") ? null : Integer.parseInt(fields[5]));
-                titleBasics.setEndYear(fields[6].equals("\\N") ? null : Integer.parseInt(fields[6]));
-                titleBasics.setRuntimeMinutes(fields[7].equals("\\N") ? null : Integer.parseInt(fields[7]));
+                TitleBasic titleBasic = new TitleBasic();
+                titleBasic.setTconst(fields[0]);
+                titleBasic.setTitleType(fields[1]);
+                titleBasic.setPrimaryTitle(fields[2]);
+                titleBasic.setOriginalTitle(fields[3]);
+                titleBasic.setAdult(fields[4].equals("1"));
+                titleBasic.setStartYear(fields[5].equals("\\N") ? null : Integer.parseInt(fields[5]));
+                titleBasic.setEndYear(fields[6].equals("\\N") ? null : Integer.parseInt(fields[6]));
+                titleBasic.setRuntimeMinutes(fields[7].equals("\\N") ? null : Integer.parseInt(fields[7]));
                 List<String> genresOfTitle = fields[8].equals("\\N") ? null : List.of(fields[8].split(","));
                 Genre genre = null;
 
@@ -108,11 +115,11 @@ public class DataLoaderService {
                         }
                         genreList.add(genre);
                     }
-                    titleBasics.setGenres(genreList);
+                    titleBasic.setGenres(genreList);
                 }
 
 
-                titleBasicsRepository.save(titleBasics);
+                titleBasicRepository.save(titleBasic);
             }
         }
     }
@@ -134,7 +141,7 @@ public class DataLoaderService {
                 titleAkas.setTypes(fields[5].equals("\\N") ? null : List.of(fields[5].split(",")));
                 titleAkas.setAttributes(fields[6].equals("\\N") ? null : List.of(fields[6].split(",")));
                 titleAkas.setOriginalTitle(fields[7].equals("1"));
-                titleAkas.setTitleBasics(titleBasicsRepository.getReferenceById(fields[0]));
+                titleAkas.setTitleBasics(titleBasicRepository.getReferenceById(fields[0]));
                 titleAkasRepository.save(titleAkas);
             }
         }
@@ -153,7 +160,7 @@ public class DataLoaderService {
                 titleEpisode.setTconst(fields[0]);
                 titleEpisode.setSeasonNumber(fields[2].equals("\\N") ? null : Integer.parseInt(fields[2]));
                 titleEpisode.setEpisodeNumber(fields[3].equals("\\N") ? null : Integer.parseInt(fields[3]));
-                titleEpisode.setParentTitle(titleBasicsRepository.getReferenceById(fields[1]));
+                titleEpisode.setParentTitle(titleBasicRepository.getReferenceById(fields[1]));
                 titleEpisodeRepository.save(titleEpisode);
             }
         }
@@ -169,10 +176,10 @@ public class DataLoaderService {
                     continue;
                 }
                 String[] fields = line.split("\t");
-                TitlePrincipals titlePrincipals = new TitlePrincipals();
-                titlePrincipals.setOrdering(Integer.parseInt(fields[1]));
-                titlePrincipals.setTitleBasics(titleBasicsRepository.getReferenceById(fields[0]));
-                titlePrincipals.setNameBasics(nameBasicsRepository.getReferenceById(fields[2]));
+                TitlePrincipal titlePrincipal = new TitlePrincipal();
+                titlePrincipal.setOrdering(Integer.parseInt(fields[1]));
+                titlePrincipal.setTitleBasics(titleBasicRepository.getReferenceById(fields[0]));
+                titlePrincipal.setNameBasics(personRepository.getReferenceById(fields[2]));
                 String CategoryName = fields[3];
                 Category category = null;
                 if (!categories.contains(CategoryName)) {
@@ -183,10 +190,10 @@ public class DataLoaderService {
                 } else {
                     category = getOrCreateCategory(CategoryName);
                 }
-                titlePrincipals.setCategory(category);
-                titlePrincipals.setJob(fields[4].equals("\\N") ? null : fields[4]);
-                titlePrincipals.setCharacters(fields[5].equals("\\N") ? null : fields[5]);
-                titlePrincipalsRepository.save(titlePrincipals);
+                titlePrincipal.setCategory(category);
+                titlePrincipal.setJob(fields[4].equals("\\N") ? null : fields[4]);
+                titlePrincipal.setCharacters(fields[5].equals("\\N") ? null : fields[5]);
+                titlePrincipalRepository.save(titlePrincipal);
             }
         }
     }
@@ -200,11 +207,11 @@ public class DataLoaderService {
                     continue;
                 }
                 String[] fields = line.split("\t");
-                TitleRatings titleRatings = new TitleRatings();
-                titleRatings.setTitleBasics(titleBasicsRepository.getReferenceById(fields[0]));
-                titleRatings.setAverageRating(Double.parseDouble(fields[1]));
-                titleRatings.setNumVotes(Integer.parseInt(fields[2]));
-                titleRatingsRepository.save(titleRatings);
+                TitleRating titleRating = new TitleRating();
+                titleRating.setTitleBasics(titleBasicRepository.getReferenceById(fields[0]));
+                titleRating.setAverageRating(Double.parseDouble(fields[1]));
+                titleRating.setNumVotes(Integer.parseInt(fields[2]));
+                titleRatingRepository.save(titleRating);
             }
         }
     }
@@ -218,25 +225,24 @@ public class DataLoaderService {
                     continue;
                 }
                 String[] fields = line.split("\t");
-                NameBasics nameBasics = new NameBasics();
-                nameBasics.setNconst(fields[0]);
-                nameBasics.setPrimaryName(fields[1]);
-                nameBasics.setBirthYear(fields[2].equals("\\N") ? null : Integer.parseInt(fields[2]));
-                nameBasics.setDeathYear(fields[3].equals("\\N") ? null : Integer.parseInt(fields[3]));
-                nameBasics.setPrimaryProfession(fields[4].equals("\\N") ? null : List.of(fields[4].split(",")));
-                nameBasics.setKnownForTitles(fields[5].equals("\\N") ? null : List.of(fields[5].split(",")));
-                nameBasicsRepository.save(nameBasics);
+                Person person = new Person();
+                person.setNconst(fields[0]);
+                person.setPrimaryName(fields[1]);
+                person.setBirthYear(fields[2].equals("\\N") ? null : Integer.parseInt(fields[2]));
+                person.setDeathYear(fields[3].equals("\\N") ? null : Integer.parseInt(fields[3]));
+                person.setPrimaryProfession(fields[4].equals("\\N") ? null : List.of(fields[4].split(",")));
+                person.setKnownForTitles(fields[5].equals("\\N") ? null : List.of(fields[5].split(",")));
+                personRepository.save(person);
             }
         }
     }
 
     private Category getOrCreateCategory(String categoryName) {
-        return categoryRepository.findByName(categoryName)
-                .orElseGet(() -> {
-                    Category category = new Category();
-                    category.setName(categoryName);
-                    return categoryRepository.save(category);
-                });
+        return categoryRepository.findByName(categoryName).orElseGet(() -> {
+            Category category = new Category();
+            category.setName(categoryName);
+            return categoryRepository.save(category);
+        });
     }
 
 

@@ -1,38 +1,30 @@
-package com.imdb.ws.entity;
-
-import jakarta.persistence.*;
+package com.imdb.ws.dto;
 
 import java.util.List;
 
-/**
- * Created from name_basics
- */
-@Entity
-@Table(name = "name_basics")
-public class NameBasics {
+public class PersonDTO {
 
-    @Id
-    @Column(name = "nconst")
     private String nconst;
-
     private String primaryName;
     private Integer birthYear;
     private Integer deathYear;
-
-    @ElementCollection
     private List<String> primaryProfession;
-
-    @ElementCollection
     private List<String> knownForTitles;
+    private List<TitlePrincipalDTO> principals;
 
-    @OneToMany(mappedBy = "nameBasics")
-    private List<TitlePrincipals> principals;
+    // Constructors, getters, and setters
 
-//    @ManyToMany(mappedBy = "directors")
-//    private List<TitleCrew> directedTitles;
+    public PersonDTO() {}
 
-//    @ManyToMany(mappedBy = "writers")
-//    private List<TitleCrew> writtenTitles;
+    public PersonDTO(String nconst, String primaryName, Integer birthYear, Integer deathYear, List<String> primaryProfession, List<String> knownForTitles, List<TitlePrincipalDTO> principals) {
+        this.nconst = nconst;
+        this.primaryName = primaryName;
+        this.birthYear = birthYear;
+        this.deathYear = deathYear;
+        this.primaryProfession = primaryProfession;
+        this.knownForTitles = knownForTitles;
+        this.principals = principals;
+    }
 
     public String getNconst() {
         return nconst;
@@ -82,27 +74,11 @@ public class NameBasics {
         this.knownForTitles = knownForTitles;
     }
 
-    public List<TitlePrincipals> getPrincipals() {
+    public List<TitlePrincipalDTO> getPrincipals() {
         return principals;
     }
 
-    public void setPrincipals(List<TitlePrincipals> principals) {
+    public void setPrincipals(List<TitlePrincipalDTO> principals) {
         this.principals = principals;
     }
-
-//    public List<TitleCrew> getDirectedTitles() {
-//        return directedTitles;
-//    }
-//
-//    public void setDirectedTitles(List<TitleCrew> directedTitles) {
-//        this.directedTitles = directedTitles;
-//    }
-//
-//    public List<TitleCrew> getWrittenTitles() {
-//        return writtenTitles;
-//    }
-//
-//    public void setWrittenTitles(List<TitleCrew> writtenTitles) {
-//        this.writtenTitles = writtenTitles;
-//    }
 }

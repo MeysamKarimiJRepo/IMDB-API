@@ -1,46 +1,18 @@
-package com.imdb.ws.entity;
-
-import jakarta.persistence.*;
+package com.imdb.ws.dto;
 
 import java.util.List;
 
-/**
- * reviewed
- */
-@Entity
-@Table(name = "title_akas")
-public class TitleAkas {
+public class TitleAkasDTO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // Primary key for the entity
-
-    @Column(name = "ordering")
+    private Long id;
     private int ordering;
-
-    @Column(name = "title")
     private String title;
-
-    @Column(name = "region")
     private String region;
-
-    @Column(name = "language")
     private String language;
-
-    @ElementCollection
-    @Column(name = "types")
     private List<String> types;
-
-    @ElementCollection
-    @Column(name = "attributes")
     private List<String> attributes;
-
-    @Column(name = "is_original_title")
-    private boolean isOriginalTitle;
-
-    @ManyToOne
-    @JoinColumn(name = "title_id", nullable = false)
-    private TitleBasic titleBasic;
+    private boolean originalTitle;
+    private String titleBasicTconst;
 
     public Long getId() {
         return id;
@@ -99,18 +71,18 @@ public class TitleAkas {
     }
 
     public boolean isOriginalTitle() {
-        return isOriginalTitle;
+        return originalTitle;
     }
 
     public void setOriginalTitle(boolean originalTitle) {
-        isOriginalTitle = originalTitle;
+        this.originalTitle = originalTitle;
     }
 
-    public TitleBasic getTitleBasics() {
-        return titleBasic;
+    public String getTitleBasicTconst() {
+        return titleBasicTconst;
     }
 
-    public void setTitleBasics(TitleBasic titleBasic) {
-        this.titleBasic = titleBasic;
+    public void setTitleBasicTconst(String titleBasicTconst) {
+        this.titleBasicTconst = titleBasicTconst;
     }
 }

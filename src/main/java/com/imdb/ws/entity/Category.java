@@ -9,10 +9,10 @@ import java.util.List;
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // Primary key for the entity
+    private Long id;
 
     @OneToMany(mappedBy = "category")
-    private List<TitlePrincipals> principals;
+    private List<TitlePrincipal> principals;
 
     @Column(name = "name", unique = true)
     private String name;
@@ -25,11 +25,11 @@ public class Category {
         this.id = id;
     }
 
-    public List<TitlePrincipals> getPrincipals() {
+    public List<TitlePrincipal> getPrincipals() {
         return principals;
     }
 
-    public void setPrincipals(List<TitlePrincipals> principals) {
+    public void setPrincipals(List<TitlePrincipal> principals) {
         this.principals = principals;
     }
 

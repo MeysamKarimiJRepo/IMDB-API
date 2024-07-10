@@ -2,27 +2,24 @@ package com.imdb.ws.entity;
 
 import jakarta.persistence.*;
 
-/**
- * reviewed
- */
 @Entity
-@Table(name = "title_principals")
-public class TitlePrincipals {
+@Table(name = "title_principal")
+public class TitlePrincipal {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // Primary key for the entity
+    private Long id;
 
     @Column(name = "ordering")
     private int ordering;
 
     @ManyToOne
     @JoinColumn(name = "tconst", nullable = false)
-    private TitleBasics titleBasics;
+    private TitleBasic titleBasic;
 
     @ManyToOne
     @JoinColumn(name = "nconst", nullable = false)
-    private NameBasics nameBasics;
+    private Person person;
 
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = false)
@@ -48,20 +45,20 @@ public class TitlePrincipals {
         this.ordering = ordering;
     }
 
-    public TitleBasics getTitleBasics() {
-        return titleBasics;
+    public TitleBasic getTitleBasics() {
+        return titleBasic;
     }
 
-    public void setTitleBasics(TitleBasics titleBasics) {
-        this.titleBasics = titleBasics;
+    public void setTitleBasics(TitleBasic titleBasic) {
+        this.titleBasic = titleBasic;
     }
 
-    public NameBasics getNameBasics() {
-        return nameBasics;
+    public Person getNameBasics() {
+        return person;
     }
 
-    public void setNameBasics(NameBasics nameBasics) {
-        this.nameBasics = nameBasics;
+    public void setNameBasics(Person person) {
+        this.person = person;
     }
 
     public Category getCategory() {

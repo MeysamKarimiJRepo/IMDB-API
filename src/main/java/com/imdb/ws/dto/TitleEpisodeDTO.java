@@ -1,25 +1,11 @@
-package com.imdb.ws.entity;
+package com.imdb.ws.dto;
 
-import jakarta.persistence.*;
+public class TitleEpisodeDTO {
 
-@Entity
-@Table(name = "title_episode")
-public class TitleEpisode {
-
-    @Id
-    @Column(name = "tconst")
     private String tconst;
-
-    @Column(name = "season_number")
     private Integer seasonNumber;
-
-    @Column(name = "episode_number")
     private Integer episodeNumber;
-
-
-    @ManyToOne
-    @JoinColumn(name = "parent_tconst")
-    private TitleBasic parentTitle;
+    private String parentTitleTconst;
 
     public String getTconst() {
         return tconst;
@@ -45,11 +31,12 @@ public class TitleEpisode {
         this.episodeNumber = episodeNumber;
     }
 
-    public TitleBasic getParentTitle() {
-        return parentTitle;
+    public String getParentTitleTconst() {
+        return parentTitleTconst;
     }
 
-    public void setParentTitle(TitleBasic parentTitle) {
-        this.parentTitle = parentTitle;
+    public void setParentTitleTconst(String parentTitleTconst) {
+        this.parentTitleTconst = parentTitleTconst;
     }
 }
+

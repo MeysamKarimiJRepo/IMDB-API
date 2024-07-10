@@ -7,12 +7,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * reviewed
- */
 @Entity
-@Table(name = "title_basics")
-public class TitleBasics {
+@Table(name = "title_basic")
+public class TitleBasic {
 
     @Id
     @Column(name = "tconst")
@@ -35,20 +32,17 @@ public class TitleBasics {
             inverseJoinColumns = @JoinColumn(name = "genre_id"))
     private Set<Genre> genres = new HashSet<>();
 
-    @OneToMany(mappedBy = "titleBasics")
+    @OneToMany(mappedBy = "titleBasic")
     private List<TitleAkas> akas;
 
-//    @OneToMany(mappedBy = "titleBasics")
-//    private List<TitleCrew> crew;
-
-    @OneToMany(mappedBy = "titleBasics")
-    private List<TitlePrincipals> principals;
+    @OneToMany(mappedBy = "titleBasic")
+    private List<TitlePrincipal> principals;
 
     @OneToMany(mappedBy = "parentTitle", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TitleEpisode> episodes = new ArrayList<>();
 
-    @OneToOne(mappedBy = "titleBasics")
-    private TitleRatings ratings;
+    @OneToOne(mappedBy = "titleBasic")
+    private TitleRating ratings;
 
     public String getTconst() {
         return tconst;
@@ -130,14 +124,6 @@ public class TitleBasics {
         this.akas = akas;
     }
 
-//    public List<TitleCrew> getCrew() {
-//        return crew;
-//    }
-//
-//    public void setCrew(List<TitleCrew> crew) {
-//        this.crew = crew;
-//    }
-
     public List<TitleEpisode> getEpisodes() {
         return episodes;
     }
@@ -146,19 +132,19 @@ public class TitleBasics {
         this.episodes = episodes;
     }
 
-    public List<TitlePrincipals> getPrincipals() {
+    public List<TitlePrincipal> getPrincipals() {
         return principals;
     }
 
-    public void setPrincipals(List<TitlePrincipals> principals) {
+    public void setPrincipals(List<TitlePrincipal> principals) {
         this.principals = principals;
     }
 
-    public TitleRatings getRatings() {
+    public TitleRating getRatings() {
         return ratings;
     }
 
-    public void setRatings(TitleRatings ratings) {
+    public void setRatings(TitleRating ratings) {
         this.ratings = ratings;
     }
 }

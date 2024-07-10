@@ -3,19 +3,19 @@ package com.imdb.ws.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "title_ratings")
-public class TitleRatings {
+@Table(name = "title_rating")
+public class TitleRating {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // Primary key for the entity
+    private Long id;
 
     private double averageRating;
     private int numVotes;
 
     @OneToOne
     @JoinColumn(name = "tconst", nullable = false)
-    private TitleBasics titleBasics;
+    private TitleBasic titleBasic;
 
     public Long getId() {
         return id;
@@ -41,11 +41,11 @@ public class TitleRatings {
         this.numVotes = numVotes;
     }
 
-    public TitleBasics getTitleBasics() {
-        return titleBasics;
+    public TitleBasic getTitleBasics() {
+        return titleBasic;
     }
 
-    public void setTitleBasics(TitleBasics titleBasics) {
-        this.titleBasics = titleBasics;
+    public void setTitleBasics(TitleBasic titleBasic) {
+        this.titleBasic = titleBasic;
     }
 }
