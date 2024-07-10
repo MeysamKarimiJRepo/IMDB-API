@@ -52,7 +52,7 @@ public class ApplicationTests {
     }
 
     @Test
-    public void testFindAll() {
+    public void testFindDirectorsAndWritersOfATitle() {
         List<Person> all = personRepository.findDirectorsAndWritersByTconst("tt0000001");
         Assertions.assertFalse(all.isEmpty());
     }
