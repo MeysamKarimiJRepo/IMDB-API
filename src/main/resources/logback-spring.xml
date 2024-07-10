@@ -1,13 +1,30 @@
 <configuration>
+
+    <!-- Console Appender -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- File Appender -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/imdb-ws.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/imdb-ws-%d{yyyy-MM-dd}.log</fileNamePattern>
+
+        <!-- Size and Time Based Rolling Policy -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/imdb-ws-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>500MB</maxFileSize>
             <maxHistory>30</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap> <!-- Optional: Total size cap for all log files -->
         </rollingPolicy>
+
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss} - %msg%n</pattern>
         </encoder>
+
+        <!-- Compression -->
+        <compress>true</compress>
     </appender>
 
     <logger name="org.springframework" level="INFO"/>
@@ -15,5 +32,6 @@
 
     <root level="INFO">
         <appender-ref ref="FILE"/>
+        <appender-ref ref="CONSOLE"/> <!-- Include Console Appender -->
     </root>
 </configuration>
