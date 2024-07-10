@@ -3,7 +3,10 @@ package com.imdb.ws.api;
 import com.imdb.ws.entity.TitleBasics;
 import com.imdb.ws.service.TitleService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -29,9 +32,6 @@ public class TitleController {
         return titleService.getBestTitlesByGenre(genre);
     }
 
-    @GetMapping("/request-count")
-    public long getRequestCount() {
-        return titleService.getRequestCount();
-    }
+
 }
 

@@ -1,6 +1,5 @@
 package com.imdb.ws.service;
 
-import com.imdb.ws.data.NameBasicsRepository;
 import com.imdb.ws.data.TitleBasicsRepository;
 import com.imdb.ws.entity.TitleBasics;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,12 +13,6 @@ public class TitleService {
     @Autowired
     private TitleBasicsRepository titleRepository;
 
-    @Autowired
-    private NameBasicsRepository nameBasicsRepository;
-
-    @Autowired
-    private RequestCountService requestCountService;
-
     public List<TitleBasics> getTitlesWithSameDirectorAndWriterAlive() {
         return titleRepository.findTitlesWithSameDirectorAndWriterAlive();
     }
@@ -32,7 +25,4 @@ public class TitleService {
         return titleRepository.findBestTitlesByGenre(genre);
     }
 
-    public long getRequestCount() {
-        return requestCountService.getRequestCount();
-    }
 }
