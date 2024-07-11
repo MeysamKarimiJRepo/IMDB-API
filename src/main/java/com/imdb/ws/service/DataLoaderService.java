@@ -10,11 +10,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.*;
-import java.nio.file.Path;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -29,6 +32,9 @@ public class DataLoaderService {
     public static final String TITLE_PRINCIPALS_TSV_GZ = "title.principals.tsv.gz";
     public static final String TITLE_RATINGS_TSV_GZ = "title.ratings.tsv.gz";
     public static final String NAME_BASICS_TSV_GZ = "name.basics.tsv.gz";
+
+    private static final int BATCH_SIZE = 1000;
+
 
     @Autowired
     private TitleBasicRepository titleBasicRepository;
@@ -91,6 +97,7 @@ public class DataLoaderService {
         long linesLoaded = 0;
         try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, TITLE_BASICS_TSV_GZ).toFile()))))) {
             String line;
+            List<TitleBasic> titleBasicsBatch = new ArrayList<>();
             while ((line = br.readLine()) != null) {
                 try {
                     // Skip the header line
@@ -126,15 +133,24 @@ public class DataLoaderService {
                         titleBasic.setGenres(genreList);
                     }
 
+                    titleBasicsBatch.add(titleBasic);
+                    if (titleBasicsBatch.size() >= BATCH_SIZE) {
+                        titleBasicRepository.saveAll(titleBasicsBatch);
+                        titleBasicsBatch.clear();
+                    }
 
-                    titleBasicRepository.save(titleBasic);
                     linesLoaded++;
-                    double percentage = ((double) linesLoaded / countLines) * 100;
-                    logger.info(String.format("loadTitleBasics Progress: %.2f%%", percentage));
+                    if (linesLoaded % BATCH_SIZE == 0) {
+                        double progress = (double) linesLoaded / countLines * 100;
+                        logger.info(String.format("loadTitleBasics Progress: %.2f%%", progress));
+                    }
                 } catch (Exception e) {
-                    logger.error("Error on loading data of line "+line);
+                    logger.error("Error on loading data of line " + line);
                     throw new RuntimeException(e);
                 }
+            }
+            if (!titleBasicsBatch.isEmpty()) {
+                titleBasicRepository.saveAll(titleBasicsBatch);
             }
         }
     }
@@ -142,6 +158,7 @@ public class DataLoaderService {
     private void loadTitleAkas() throws Exception {
         long countLines = countLines(TITLE_AKAS_TSV_GZ);
         long linesLoaded = 0;
+        List<TitleAkas> titleAkasBatch = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, TITLE_AKAS_TSV_GZ).toFile()))))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -160,14 +177,25 @@ public class DataLoaderService {
                     titleAkas.setAttributes(fields[6].equals("\\N") ? null : List.of(fields[6].split(",")));
                     titleAkas.setOriginalTitle(fields[7].equals("1"));
                     titleAkas.setTitleBasics(titleBasicRepository.getReferenceById(fields[0]));
-                    titleAkasRepository.save(titleAkas);
+                    titleAkasBatch.add(titleAkas);
+
+                    if (titleAkasBatch.size() >= BATCH_SIZE) {
+                        titleAkasRepository.saveAll(titleAkasBatch);
+                        titleAkasBatch.clear();
+                    }
+
                     linesLoaded++;
-                    double percentage = ((double) linesLoaded / countLines) * 100;
-                    logger.info(String.format("loadTitleAkas Progress: %.2f%%", percentage));
+                    if (linesLoaded % BATCH_SIZE == 0) {
+                        double progress = (double) linesLoaded / countLines * 100;
+                        logger.info(String.format("loadAkasBasics Progress: %.2f%%", progress));
+                    }
                 } catch (Exception e) {
-                    logger.error("Error on loading data of line "+line);
+                    logger.error("Error on loading data of line " + line);
                     throw new RuntimeException(e);
                 }
+            }
+            if (!titleAkasBatch.isEmpty()) {
+                titleAkasRepository.saveAll(titleAkasBatch);
             }
         }
     }
@@ -175,6 +203,8 @@ public class DataLoaderService {
     private void loadTitleEpisode() throws Exception {
         long countLines = countLines(TITLE_EPISODE_TSV_GZ);
         long linesLoaded = 0;
+        List<TitleEpisode> titleEpisodeBatch = new ArrayList<>();
+
         try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, TITLE_EPISODE_TSV_GZ).toFile()))))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -189,19 +219,31 @@ public class DataLoaderService {
                     titleEpisode.setSeasonNumber(fields[2].equals("\\N") ? null : Integer.parseInt(fields[2]));
                     titleEpisode.setEpisodeNumber(fields[3].equals("\\N") ? null : Integer.parseInt(fields[3]));
                     titleEpisode.setParentTitle(titleBasicRepository.getReferenceById(fields[1]));
-                    titleEpisodeRepository.save(titleEpisode);
+                    titleEpisodeBatch.add(titleEpisode);
+
+                    if (titleEpisodeBatch.size() >= BATCH_SIZE) {
+                        titleEpisodeRepository.saveAll(titleEpisodeBatch);
+                        titleEpisodeBatch.clear();
+                    }
+
                     linesLoaded++;
-                    double percentage = ((double) linesLoaded / countLines) * 100;
-                    logger.info(String.format("loadTitleEpisode Progress: %.2f%%", percentage));
+                    if (linesLoaded % BATCH_SIZE == 0) {
+                        double progress = (double) linesLoaded / countLines * 100;
+                        logger.info(String.format("loadEpisode Progress: %.2f%%", progress));
+                    }
                 } catch (Exception e) {
-                    logger.error("Error on loading data of line "+line);
+                    logger.error("Error on loading data of line " + line);
                     throw new RuntimeException(e);
                 }
+            }
+            if (!titleEpisodeBatch.isEmpty()) {
+                titleEpisodeRepository.saveAll(titleEpisodeBatch);
             }
         }
     }
 
     private void loadTitlePrincipals() throws Exception {
+        List<TitlePrincipal> titlePrincipalBatch = new ArrayList<>();
         long countLines = countLines(TITLE_PRINCIPALS_TSV_GZ);
         long linesLoaded = 0;
         HashSet<String> categories = new HashSet<>();
@@ -231,19 +273,31 @@ public class DataLoaderService {
                     titlePrincipal.setCategory(category);
                     titlePrincipal.setJob(fields[4].equals("\\N") ? null : fields[4]);
                     titlePrincipal.setCharacters(fields[5].equals("\\N") ? null : fields[5]);
-                    titlePrincipalRepository.save(titlePrincipal);
+                    titlePrincipalBatch.add(titlePrincipal);
+
+                    if (titlePrincipalBatch.size() >= BATCH_SIZE) {
+                        titlePrincipalRepository.saveAll(titlePrincipalBatch);
+                        titlePrincipalBatch.clear();
+                    }
+
                     linesLoaded++;
-                    double percentage = ((double) linesLoaded / countLines) * 100;
-                    logger.info(String.format("loadTitlePrincipals Progress: %.2f%%", percentage));
+                    if (linesLoaded % BATCH_SIZE == 0) {
+                        double progress = (double) linesLoaded / countLines * 100;
+                        logger.info(String.format("titlePrincipal Progress: %.2f%%", progress));
+                    }
                 } catch (Exception e) {
-                    logger.error("Error on loading data of line "+line);
+                    logger.error("Error on loading data of line " + line);
                     throw new RuntimeException(e);
                 }
+            }
+            if (!titlePrincipalBatch.isEmpty()) {
+                titlePrincipalRepository.saveAll(titlePrincipalBatch);
             }
         }
     }
 
     private void loadTitleRatings() throws Exception {
+        List<TitleRating> titleRatingBatch = new ArrayList<>();
         long countLines = countLines(TITLE_RATINGS_TSV_GZ);
         long linesLoaded = 0;
         try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, TITLE_RATINGS_TSV_GZ).toFile()))))) {
@@ -259,19 +313,32 @@ public class DataLoaderService {
                     titleRating.setTitleBasics(titleBasicRepository.getReferenceById(fields[0]));
                     titleRating.setAverageRating(Double.parseDouble(fields[1]));
                     titleRating.setNumVotes(Integer.parseInt(fields[2]));
-                    titleRatingRepository.save(titleRating);
+                    titleRatingBatch.add(titleRating);
+
+                    if (titleRatingBatch.size() >= BATCH_SIZE) {
+                        titleRatingRepository.saveAll(titleRatingBatch);
+                        titleRatingBatch.clear();
+                    }
+
                     linesLoaded++;
-                    double percentage = ((double) linesLoaded / countLines) * 100;
-                    logger.info(String.format("loadTitleRatings Progress: %.2f%%", percentage));
+                    if (linesLoaded % BATCH_SIZE == 0) {
+                        double progress = (double) linesLoaded / countLines * 100;
+                        logger.info(String.format("titleRating Progress: %.2f%%", progress));
+                    }
                 } catch (Exception e) {
-                    logger.error("Error on loading data of line "+line);
+                    logger.error("Error on loading data of line " + line);
                     throw new RuntimeException(e);
                 }
+            }
+            if (!titleRatingBatch.isEmpty()) {
+                titleRatingRepository.saveAll(titleRatingBatch);
             }
         }
     }
 
     private void loadNameBasics() throws Exception {
+        List<Person> personBatch = new ArrayList<>();
+
         long countLines = countLines(NAME_BASICS_TSV_GZ);
         long linesLoaded = 0;
         try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, NAME_BASICS_TSV_GZ).toFile()))))) {
@@ -290,14 +357,25 @@ public class DataLoaderService {
                     person.setDeathYear(fields[3].equals("\\N") ? null : Integer.parseInt(fields[3]));
                     person.setPrimaryProfession(fields[4].equals("\\N") ? null : List.of(fields[4].split(",")));
                     person.setKnownForTitles(fields[5].equals("\\N") ? null : List.of(fields[5].split(",")));
-                    personRepository.save(person);
+                    personBatch.add(person);
+
+                    if (personBatch.size() >= BATCH_SIZE) {
+                        personRepository.saveAll(personBatch);
+                        personBatch.clear();
+                    }
+
                     linesLoaded++;
-                    double percentage = ((double) linesLoaded / countLines) * 100;
-                    logger.info(String.format("loadNameBasics Progress: %.2f%%", percentage));
+                    if (linesLoaded % BATCH_SIZE == 0) {
+                        double progress = (double) linesLoaded / countLines * 100;
+                        logger.info(String.format("persons Progress: %.2f%%", progress));
+                    }
                 } catch (Exception e) {
-                    logger.error("Error on loading data of line "+line);
+                    logger.error("Error on loading data of line " + line);
                     throw new RuntimeException(e);
                 }
+            }
+            if (!personBatch.isEmpty()) {
+                personRepository.saveAll(personBatch);
             }
         }
     }

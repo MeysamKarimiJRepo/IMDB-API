@@ -18,7 +18,7 @@ public class TitleAkas {
     @Column(name = "ordering")
     private int ordering;
 
-    @Column(name = "title")
+    @Column(name = "title", length = 1024)
     private String title;
 
     @Column(name = "region")
