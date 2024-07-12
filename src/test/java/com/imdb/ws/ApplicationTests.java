@@ -77,7 +77,7 @@ public class ApplicationTests {
     @Test
     public void testFindBestTitlesByGenre() {
         String genre = "Short";
-        List<TitleBasic> titles = titleBasicRepository.findBestTitlesByGenre(genre);
+        List<TitleBasic> titles = titleBasicRepository.findBestTitlesByGenreAndYear(genre);
 
         assertThat(titles).isNotEmpty();
         titles.forEach(title -> System.out.println(title.getPrimaryTitle()));
