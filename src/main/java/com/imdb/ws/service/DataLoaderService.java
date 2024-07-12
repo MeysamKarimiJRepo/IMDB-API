@@ -127,7 +127,7 @@ public class DataLoaderService {
 
         executor.shutdown();
         try {
-            if (!executor.awaitTermination(60, TimeUnit.MINUTES)) {
+            if (!executor.awaitTermination(1440, TimeUnit.MINUTES)) {
                 logger.warn("Executor did not terminate in the specified time. Attempting to shut down now.");
                 executor.shutdownNow();
                 if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
