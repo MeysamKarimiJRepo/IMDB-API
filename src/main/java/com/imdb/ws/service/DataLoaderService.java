@@ -16,10 +16,7 @@ import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -64,22 +61,26 @@ public class DataLoaderService {
     @Autowired
     private GenreRepository genreRepository;
 
+    @Autowired
+    private FileConfiguration fileConfig;
+
+
     @Value("${dataset.folder.path}")
     private String datasetFolderPath;
 
     @Value("${loadDataFromDataSet}")
     private boolean loadDataFromDataSet;
 
-    @Value("${numThreads:4}") // Default to 4 threads
+    @Value("${numThreads:4}")
     private int numThreads;
 
-    @Value("${batchSize:1000}") // Default to 4 threads
+    @Value("${batchSize:1000}")
     private int batchSize;
 
     public void loadData() {
         if (loadDataFromDataSet) {
             loadGenresAndCategoriesFromDatabase();
-            List<String> files = List.of(TITLE_BASICS_TSV_GZ, TITLE_AKAS_TSV_GZ, TITLE_EPISODE_TSV_GZ, TITLE_PRINCIPALS_TSV_GZ, TITLE_RATINGS_TSV_GZ, NAME_BASICS_TSV_GZ);
+            List<String> files = Collections.unmodifiableList(fileConfig.getFileList());
             Instant start = Instant.now();
             try {
                 for (String fileName : files) {
@@ -99,14 +100,12 @@ public class DataLoaderService {
 
     private void loadGenresAndCategoriesFromDatabase() {
         List<Category> categoryList = categoryRepository.findAll();
-        for (Category cat:
-             categoryList) {
+        for (Category cat : categoryList) {
             categories.add(cat.getName());
         }
 
         List<Genre> genreList = genreRepository.findAll();
-        for (Genre genre:
-             genreList) {
+        for (Genre genre : genreList) {
             genres.add(genre.getName());
         }
     }
