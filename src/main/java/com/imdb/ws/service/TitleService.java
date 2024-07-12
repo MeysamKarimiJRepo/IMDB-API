@@ -4,6 +4,8 @@ import com.imdb.ws.data.TitleBasicRepository;
 import com.imdb.ws.dto.TitleBasicDTO;
 import com.imdb.ws.entity.TitleBasic;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +14,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class TitleService {
+    private static final Logger logger = LoggerFactory.getLogger(TitleService.class);
 
     @Autowired
     private TitleBasicRepository titleRepository;
@@ -34,7 +37,9 @@ public class TitleService {
     }
 
     public List<TitleBasicDTO> getBestTitlesByGenre(String genre) {
-        List<TitleBasic> titles = titleRepository.findBestTitlesByGenre(genre);
+        List<TitleBasic> titles = titleRepository.findBestTitlesByGenreAndYear(genre);
+        long size = titles != null ? titles.size() : 0;
+        logger.info(String.format("best titles by genre in year %d",size));
         return titles.stream()
                 .map(title -> modelMapper.map(title, TitleBasicDTO.class))
                 .collect(Collectors.toList());
