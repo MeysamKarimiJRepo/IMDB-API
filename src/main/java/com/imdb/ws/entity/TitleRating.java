@@ -14,7 +14,7 @@ public class TitleRating {
     private int numVotes;
 
     @OneToOne
-    @JoinColumn(name = "tconst", nullable = false)
+    @JoinColumn(name = "tconst", nullable = false, unique = true)
     private TitleBasic titleBasic;
 
     public Long getId() {
