@@ -2,7 +2,6 @@ package com.imdb.ws.service;
 
 import com.imdb.ws.data.*;
 import com.imdb.ws.entity.*;
-import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +20,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
 @Service
@@ -33,8 +36,9 @@ public class DataLoaderService {
     public static final String TITLE_RATINGS_TSV_GZ = "title.ratings.tsv.gz";
     public static final String NAME_BASICS_TSV_GZ = "name.basics.tsv.gz";
 
-    private static final int BATCH_SIZE = 1000;
-
+    // Instance variable for genres set
+    private final Set<String> genres = ConcurrentHashMap.newKeySet();
+    private final Set<String> categories = ConcurrentHashMap.newKeySet();
 
     @Autowired
     private TitleBasicRepository titleBasicRepository;
@@ -66,21 +70,22 @@ public class DataLoaderService {
     @Value("${loadDataFromDataSet}")
     private boolean loadDataFromDataSet;
 
-    @PostConstruct
-    @Transactional
+    @Value("${numThreads:4}") // Default to 4 threads
+    private int numThreads;
+
+    @Value("${batchSize:1000}") // Default to 4 threads
+    private int batchSize;
+
     public void loadData() {
         if (loadDataFromDataSet) {
+            List<String> files = List.of(TITLE_BASICS_TSV_GZ, TITLE_AKAS_TSV_GZ, TITLE_EPISODE_TSV_GZ, TITLE_PRINCIPALS_TSV_GZ, TITLE_RATINGS_TSV_GZ, NAME_BASICS_TSV_GZ);
             Instant start = Instant.now();
-
             try {
-                loadTitleBasics();
-                loadTitleAkas();
-                loadTitleEpisode();
-                loadTitlePrincipals();
-                loadTitleRatings();
-                loadNameBasics();
+                for (String fileName : files) {
+                    loadFileWithMultipleThreads(fileName, numThreads);
+                }
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("In loading data into the database: ", e);
             } finally {
                 Instant end = Instant.now();
                 Duration duration = Duration.between(start, end);
@@ -91,18 +96,70 @@ public class DataLoaderService {
         }
     }
 
-    private void loadTitleBasics() throws Exception {
-        HashSet<String> genres = new HashSet<>();
-        long countLines = countLines(TITLE_BASICS_TSV_GZ);
-        long linesLoaded = 0;
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, TITLE_BASICS_TSV_GZ).toFile()))))) {
+    public void loadFileWithMultipleThreads(String fileName, int numThreads) throws IOException {
+        long totalLines = countLines(fileName);
+        long linesPerThread = totalLines / numThreads;
+        logger.info(String.format("For %s and total %d lines, %d lines assigned to each thread (%d threads)", fileName, totalLines, linesPerThread, numThreads));
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+
+        for (int i = 0; i < numThreads; i++) {
+            long startLine = i * linesPerThread + 2; // Skip header
+            long endLine = (i == numThreads - 1) ? totalLines + 1 : (i + 1) * linesPerThread + 1;
+
+            executor.submit(() -> {
+                try {
+                    switch (fileName) {
+                        case TITLE_BASICS_TSV_GZ -> loadTitleBasicsInRange(fileName, totalLines, startLine, endLine);
+                        case TITLE_AKAS_TSV_GZ -> loadTitleAkasInRange(fileName, totalLines, startLine, endLine);
+                        case TITLE_EPISODE_TSV_GZ -> loadTitleEpisodeInRange(fileName, totalLines, startLine, endLine);
+                        case TITLE_PRINCIPALS_TSV_GZ ->
+                                loadTitlePrincipalsInRange(fileName, totalLines, startLine, endLine);
+                        case TITLE_RATINGS_TSV_GZ -> loadTitleRatingsInRange(fileName, totalLines, startLine, endLine);
+                        case NAME_BASICS_TSV_GZ -> loadNameBasicsInRange(fileName, totalLines, startLine, endLine);
+                        default -> throw new RuntimeException("The file is not supported: " + fileName);
+                    }
+                } catch (Exception e) {
+                    logger.error("Error in processing file: " + fileName + " from line " + startLine + " to " + endLine, e);
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(60, TimeUnit.MINUTES)) {
+                logger.warn("Executor did not terminate in the specified time. Attempting to shut down now.");
+                executor.shutdownNow();
+                if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                    logger.error("Executor did not terminate.");
+                }
+            }
+        } catch (InterruptedException e) {
+            logger.error("Thread interrupted while waiting for executor to terminate.", e);
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+
+
+    @Transactional
+    public void loadTitleBasicsInRange(String fileName, long totalLines, long startLine, long endLine) throws Exception {
+
+        long currentLine = 0;
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, fileName).toFile()))))) {
             String line;
             List<TitleBasic> titleBasicsBatch = new ArrayList<>();
             while ((line = br.readLine()) != null) {
                 try {
+                    currentLine++;
                     // Skip the header line
                     if (line.startsWith("tconst")) {
                         continue;
+                    }
+                    if (currentLine < startLine) continue;
+                    if (currentLine > endLine) {
+                        printLog(fileName, startLine, endLine);
+                        break;
                     }
                     String[] fields = line.split("\t");
                     TitleBasic titleBasic = new TitleBasic();
@@ -120,13 +177,15 @@ public class DataLoaderService {
                     if (genresOfTitle != null) {
                         Set<Genre> genreList = new HashSet<>();
                         for (String genreName : genresOfTitle) {
-                            if (!genres.contains(genre)) {
-                                genre = new Genre();
-                                genre.setName(genreName);
-                                genre = genreRepository.save(genre);
-                                genres.add(genreName);
-                            } else {
-                                genre = genreRepository.findByName(genreName);
+                            synchronized (genres) {
+                                if (!genres.contains(genreName)) {
+                                    genre = new Genre();
+                                    genre.setName(genreName);
+                                    genre = genreRepository.save(genre);
+                                    genres.add(genreName);
+                                } else {
+                                    genre = genreRepository.findByName(genreName);
+                                }
                             }
                             genreList.add(genre);
                         }
@@ -134,18 +193,15 @@ public class DataLoaderService {
                     }
 
                     titleBasicsBatch.add(titleBasic);
-                    if (titleBasicsBatch.size() >= BATCH_SIZE) {
+                    if (titleBasicsBatch.size() >= batchSize) {
                         titleBasicRepository.saveAll(titleBasicsBatch);
                         titleBasicsBatch.clear();
                     }
 
-                    linesLoaded++;
-                    if (linesLoaded % BATCH_SIZE == 0) {
-                        double progress = (double) linesLoaded / countLines * 100;
-                        logger.info(String.format("loadTitleBasics Progress: %.2f%%", progress));
-                    }
+
+                    printTheProgressOfLoading(currentLine, startLine, totalLines, "%s %s Progress: %.2f%%", fileName);
                 } catch (Exception e) {
-                    logger.error("Error on loading data of line " + line);
+                    printLineCausedError(e.toString(), fileName, line);
                     throw new RuntimeException(e);
                 }
             }
@@ -155,18 +211,35 @@ public class DataLoaderService {
         }
     }
 
-    private void loadTitleAkas() throws Exception {
-        long countLines = countLines(TITLE_AKAS_TSV_GZ);
-        long linesLoaded = 0;
+    private void printTheProgressOfLoading(long currentLine, long startLine, long endLine, String format, String fileName) {
+        if (currentLine % batchSize == 0 || currentLine == endLine - startLine + 1) {
+            double progress = ((double) (currentLine - startLine + 1) / (endLine - startLine + 1)) * 100.0;
+            logger.info(String.format(format, Thread.currentThread().getName(), fileName, progress));
+        }
+    }
+
+
+    @Transactional
+    public void loadTitleAkasInRange(String fileName, long totalLines, long startLine, long endLine) throws Exception {
+        long currentLine = 0;
         List<TitleAkas> titleAkasBatch = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, TITLE_AKAS_TSV_GZ).toFile()))))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, fileName).toFile()))))) {
             String line;
             while ((line = br.readLine()) != null) {
                 try {
+                    currentLine++;
                     // Skip the header line
                     if (line.startsWith("titleId")) {
                         continue;
                     }
+                    if (currentLine < startLine) {
+                        continue;
+                    }
+                    if (currentLine > endLine) {
+                        printLog(fileName, startLine, endLine);
+                        break;
+                    }
+
                     String[] fields = line.split("\t");
                     TitleAkas titleAkas = new TitleAkas();
                     titleAkas.setOrdering(Integer.parseInt(fields[1]));
@@ -179,18 +252,14 @@ public class DataLoaderService {
                     titleAkas.setTitleBasics(titleBasicRepository.getReferenceById(fields[0]));
                     titleAkasBatch.add(titleAkas);
 
-                    if (titleAkasBatch.size() >= BATCH_SIZE) {
+                    if (titleAkasBatch.size() >= batchSize) {
                         titleAkasRepository.saveAll(titleAkasBatch);
                         titleAkasBatch.clear();
                     }
 
-                    linesLoaded++;
-                    if (linesLoaded % BATCH_SIZE == 0) {
-                        double progress = (double) linesLoaded / countLines * 100;
-                        logger.info(String.format("loadAkasBasics Progress: %.2f%%", progress));
-                    }
+                    printTheProgressOfLoading(currentLine, startLine, totalLines, "%s Progress: %.2f%%", fileName);
                 } catch (Exception e) {
-                    logger.error("Error on loading data of line " + line);
+                    printLineCausedError(e.toString(), fileName, line);
                     throw new RuntimeException(e);
                 }
             }
@@ -200,18 +269,31 @@ public class DataLoaderService {
         }
     }
 
-    private void loadTitleEpisode() throws Exception {
-        long countLines = countLines(TITLE_EPISODE_TSV_GZ);
-        long linesLoaded = 0;
+    private static void printLog(String fileName, long startLine, long endLine) {
+        logger.info(String.format("%s processed %d to %d of file %s", Thread.currentThread().getName(), startLine, endLine, fileName));
+    }
+
+    @Transactional
+    public void loadTitleEpisodeInRange(String fileName, long totalLines, long startLine, long endLine) throws Exception {
+        long currentLine = 0;
         List<TitleEpisode> titleEpisodeBatch = new ArrayList<>();
 
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, TITLE_EPISODE_TSV_GZ).toFile()))))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, fileName).toFile()))))) {
             String line;
             while ((line = br.readLine()) != null) {
                 try {
+                    currentLine++;
                     // Skip the header line
                     if (line.startsWith("tconst")) {
                         continue;
+                    }
+
+                    if (currentLine < startLine) {
+                        continue;
+                    }
+                    if (currentLine > endLine) {
+                        printLog(fileName, startLine, endLine);
+                        break;
                     }
                     String[] fields = line.split("\t");
                     TitleEpisode titleEpisode = new TitleEpisode();
@@ -221,18 +303,14 @@ public class DataLoaderService {
                     titleEpisode.setParentTitle(titleBasicRepository.getReferenceById(fields[1]));
                     titleEpisodeBatch.add(titleEpisode);
 
-                    if (titleEpisodeBatch.size() >= BATCH_SIZE) {
+                    if (titleEpisodeBatch.size() >= batchSize) {
                         titleEpisodeRepository.saveAll(titleEpisodeBatch);
                         titleEpisodeBatch.clear();
                     }
 
-                    linesLoaded++;
-                    if (linesLoaded % BATCH_SIZE == 0) {
-                        double progress = (double) linesLoaded / countLines * 100;
-                        logger.info(String.format("loadEpisode Progress: %.2f%%", progress));
-                    }
+                    printTheProgressOfLoading(currentLine, startLine, totalLines, "%s Progress: %.2f%%", fileName);
                 } catch (Exception e) {
-                    logger.error("Error on loading data of line " + line);
+                    printLineCausedError(e.toString(), fileName, line);
                     throw new RuntimeException(e);
                 }
             }
@@ -242,18 +320,26 @@ public class DataLoaderService {
         }
     }
 
-    private void loadTitlePrincipals() throws Exception {
+    @Transactional
+    public void loadTitlePrincipalsInRange(String fileName, long totalLines, long startLine, long endLine) throws Exception {
         List<TitlePrincipal> titlePrincipalBatch = new ArrayList<>();
-        long countLines = countLines(TITLE_PRINCIPALS_TSV_GZ);
-        long linesLoaded = 0;
-        HashSet<String> categories = new HashSet<>();
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, TITLE_PRINCIPALS_TSV_GZ).toFile()))))) {
+        long currentLine = 0;
+
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, fileName).toFile()))))) {
             String line;
             while ((line = br.readLine()) != null) {
                 try {
+                    currentLine++;
                     // Skip the header line
                     if (line.startsWith("tconst")) {
                         continue;
+                    }
+                    if (currentLine < startLine) {
+                        continue;
+                    }
+                    if (currentLine > endLine) {
+                        printLog(fileName, startLine, endLine);
+                        break;
                     }
                     String[] fields = line.split("\t");
                     TitlePrincipal titlePrincipal = new TitlePrincipal();
@@ -262,31 +348,29 @@ public class DataLoaderService {
                     titlePrincipal.setNameBasics(personRepository.getReferenceById(fields[2]));
                     String CategoryName = fields[3];
                     Category category = null;
-                    if (!categories.contains(CategoryName)) {
-                        category = new Category();
-                        category.setName(CategoryName);
-                        category = categoryRepository.save(category);
-                        categories.add(CategoryName);
-                    } else {
-                        category = getOrCreateCategory(CategoryName);
+                    synchronized (categories) {
+                        if (!categories.contains(CategoryName)) {
+                            category = new Category();
+                            category.setName(CategoryName);
+                            category = categoryRepository.save(category);
+                            categories.add(CategoryName);
+                        } else {
+                            category = getOrCreateCategory(CategoryName);
+                        }
                     }
                     titlePrincipal.setCategory(category);
                     titlePrincipal.setJob(fields[4].equals("\\N") ? null : fields[4]);
                     titlePrincipal.setCharacters(fields[5].equals("\\N") ? null : fields[5]);
                     titlePrincipalBatch.add(titlePrincipal);
 
-                    if (titlePrincipalBatch.size() >= BATCH_SIZE) {
+                    if (titlePrincipalBatch.size() >= batchSize) {
                         titlePrincipalRepository.saveAll(titlePrincipalBatch);
                         titlePrincipalBatch.clear();
                     }
 
-                    linesLoaded++;
-                    if (linesLoaded % BATCH_SIZE == 0) {
-                        double progress = (double) linesLoaded / countLines * 100;
-                        logger.info(String.format("titlePrincipal Progress: %.2f%%", progress));
-                    }
+                    printTheProgressOfLoading(currentLine, startLine, totalLines, "%s Progress: %.2f%%", fileName);
                 } catch (Exception e) {
-                    logger.error("Error on loading data of line " + line);
+                    printLineCausedError(e.toString(), fileName, line);
                     throw new RuntimeException(e);
                 }
             }
@@ -296,17 +380,25 @@ public class DataLoaderService {
         }
     }
 
-    private void loadTitleRatings() throws Exception {
+    @Transactional
+    public void loadTitleRatingsInRange(String fileName, long totalLines, long startLine, long endLine) throws Exception {
         List<TitleRating> titleRatingBatch = new ArrayList<>();
-        long countLines = countLines(TITLE_RATINGS_TSV_GZ);
-        long linesLoaded = 0;
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, TITLE_RATINGS_TSV_GZ).toFile()))))) {
+        long currentLine = 0;
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, fileName).toFile()))))) {
             String line;
             while ((line = br.readLine()) != null) {
                 try {
+                    currentLine++;
                     // Skip the header line
                     if (line.startsWith("tconst")) {
                         continue;
+                    }
+                    if (currentLine < startLine) {
+                        continue;
+                    }
+                    if (currentLine > endLine) {
+                        printLog(fileName, startLine, endLine);
+                        break;
                     }
                     String[] fields = line.split("\t");
                     TitleRating titleRating = new TitleRating();
@@ -315,18 +407,15 @@ public class DataLoaderService {
                     titleRating.setNumVotes(Integer.parseInt(fields[2]));
                     titleRatingBatch.add(titleRating);
 
-                    if (titleRatingBatch.size() >= BATCH_SIZE) {
+                    if (titleRatingBatch.size() >= batchSize) {
                         titleRatingRepository.saveAll(titleRatingBatch);
                         titleRatingBatch.clear();
                     }
 
-                    linesLoaded++;
-                    if (linesLoaded % BATCH_SIZE == 0) {
-                        double progress = (double) linesLoaded / countLines * 100;
-                        logger.info(String.format("titleRating Progress: %.2f%%", progress));
-                    }
+
+                    printTheProgressOfLoading(currentLine, startLine, totalLines, "%s Progress: %.2f%%", fileName);
                 } catch (Exception e) {
-                    logger.error("Error on loading data of line " + line);
+                    printLineCausedError(e.toString(), fileName, line);
                     throw new RuntimeException(e);
                 }
             }
@@ -336,18 +425,25 @@ public class DataLoaderService {
         }
     }
 
-    private void loadNameBasics() throws Exception {
+    @Transactional
+    public void loadNameBasicsInRange(String fileName, long totalLines, long startLine, long endLine) throws Exception {
         List<Person> personBatch = new ArrayList<>();
-
-        long countLines = countLines(NAME_BASICS_TSV_GZ);
-        long linesLoaded = 0;
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, NAME_BASICS_TSV_GZ).toFile()))))) {
+        long currentLine = 0;
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, fileName).toFile()))))) {
             String line;
             while ((line = br.readLine()) != null) {
                 try {
+                    currentLine++;
                     // Skip the header line
                     if (line.startsWith("nconst")) {
                         continue;
+                    }
+                    if (currentLine < startLine) {
+                        continue;
+                    }
+                    if (currentLine > endLine) {
+                        printLog(fileName, startLine, endLine);
+                        break;
                     }
                     String[] fields = line.split("\t");
                     Person person = new Person();
@@ -359,18 +455,14 @@ public class DataLoaderService {
                     person.setKnownForTitles(fields[5].equals("\\N") ? null : List.of(fields[5].split(",")));
                     personBatch.add(person);
 
-                    if (personBatch.size() >= BATCH_SIZE) {
+                    if (personBatch.size() >= batchSize) {
                         personRepository.saveAll(personBatch);
                         personBatch.clear();
                     }
 
-                    linesLoaded++;
-                    if (linesLoaded % BATCH_SIZE == 0) {
-                        double progress = (double) linesLoaded / countLines * 100;
-                        logger.info(String.format("persons Progress: %.2f%%", progress));
-                    }
+                    printTheProgressOfLoading(currentLine, startLine, totalLines, "5s Progress: %.2f%%", fileName);
                 } catch (Exception e) {
-                    logger.error("Error on loading data of line " + line);
+                    printLineCausedError(e.toString(), fileName, line);
                     throw new RuntimeException(e);
                 }
             }
@@ -380,7 +472,12 @@ public class DataLoaderService {
         }
     }
 
-    private Category getOrCreateCategory(String categoryName) {
+    private static void printLineCausedError(String error, String fileName, String line) {
+        logger.error(String.format("%s on loading data from %s line : %s", error, fileName, line));
+    }
+
+    @Transactional
+    public Category getOrCreateCategory(String categoryName) {
         return categoryRepository.findByName(categoryName).orElseGet(() -> {
             Category category = new Category();
             category.setName(categoryName);
@@ -391,7 +488,7 @@ public class DataLoaderService {
     public long countLines(String fileName) throws IOException {
         long lineCount = 0;
 
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, "title.basics.tsv.gz").toFile()))))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(Paths.get(datasetFolderPath, fileName).toFile()))))) {
             // the first line is the header and we want to skip it
             br.readLine();
 
