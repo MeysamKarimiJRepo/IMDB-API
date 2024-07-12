@@ -78,6 +78,7 @@ public class DataLoaderService {
 
     public void loadData() {
         if (loadDataFromDataSet) {
+            loadGenresAndCategoriesFromDatabase();
             List<String> files = List.of(TITLE_BASICS_TSV_GZ, TITLE_AKAS_TSV_GZ, TITLE_EPISODE_TSV_GZ, TITLE_PRINCIPALS_TSV_GZ, TITLE_RATINGS_TSV_GZ, NAME_BASICS_TSV_GZ);
             Instant start = Instant.now();
             try {
@@ -93,6 +94,20 @@ public class DataLoaderService {
             }
         } else {
             logger.info("The loadDataFromDataSet setting in the properties file set to false, So data will not be loaded from dataset");
+        }
+    }
+
+    private void loadGenresAndCategoriesFromDatabase() {
+        List<Category> categoryList = categoryRepository.findAll();
+        for (Category cat:
+             categoryList) {
+            categories.add(cat.getName());
+        }
+
+        List<Genre> genreList = genreRepository.findAll();
+        for (Genre genre:
+             genreList) {
+            genres.add(genre.getName());
         }
     }
 
