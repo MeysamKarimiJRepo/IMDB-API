@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -384,7 +385,10 @@ public class DataLoaderService {
                     }
 
                     printTheProgressOfLoading(currentLine, startLine, totalLines, fileName);
-                } catch (Exception e) {
+                } catch (DataIntegrityViolationException e) {
+                    printLineCausedError(e.toString(), fileName, line);
+
+                } catch (Exception e){
                     printLineCausedError(e.toString(), fileName, line);
                     throw new RuntimeException(e);
                 }
