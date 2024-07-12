@@ -25,6 +25,7 @@ public class TitlePrincipal {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
     private String job;
+    @Column(length = 2000)
     private String characters;
 
     // Getters and Setters
