@@ -1,7 +1,6 @@
 package com.imdb.ws.api;
 
 import com.imdb.ws.dto.TitleBasicDTO;
-import com.imdb.ws.entity.TitleBasic;
 import com.imdb.ws.service.TitleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
