@@ -12,8 +12,6 @@ public class PersonDTO {
     private List<String> knownForTitles;
     private List<TitlePrincipalDTO> principals;
 
-    // Constructors, getters, and setters
-
     public PersonDTO() {}
 
     public PersonDTO(String nconst, String primaryName, Integer birthYear, Integer deathYear, List<String> primaryProfession, List<String> knownForTitles, List<TitlePrincipalDTO> principals) {

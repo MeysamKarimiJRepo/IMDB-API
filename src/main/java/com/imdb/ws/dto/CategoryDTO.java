@@ -8,8 +8,6 @@ public class CategoryDTO {
     private List<TitlePrincipalDTO> principals;
     private String name;
 
-    // Constructors, getters, and setters
-
     public CategoryDTO() {}
 
     public CategoryDTO(Long id, List<TitlePrincipalDTO> principals, String name) {

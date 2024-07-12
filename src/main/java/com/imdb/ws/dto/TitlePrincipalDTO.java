@@ -10,7 +10,6 @@ public class TitlePrincipalDTO {
     private String job;
     private String characters;
 
-    // Constructors, getters, and setters
 
     public TitlePrincipalDTO() {}
 

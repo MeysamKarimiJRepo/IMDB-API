@@ -1,6 +1,5 @@
 package com.imdb.ws.dto;
 
-import java.util.List;
 import java.util.Set;
 
 public class TitleBasicDTO {
@@ -14,12 +13,7 @@ public class TitleBasicDTO {
     private Integer endYear;
     private Integer runtimeMinutes;
     private Set<String> genres;
-    private List<TitleAkasDTO> akas;
-    private List<TitlePrincipalDTO> principals;
-    private List<TitleEpisodeDTO> episodes;
     private TitleRatingDTO ratings;
-
-    // Constructors, getters, and setters
 
     public String getTconst() {
         return tconst;
@@ -91,30 +85,6 @@ public class TitleBasicDTO {
 
     public void setGenres(Set<String> genres) {
         this.genres = genres;
-    }
-
-    public List<TitleAkasDTO> getAkas() {
-        return akas;
-    }
-
-    public void setAkas(List<TitleAkasDTO> akas) {
-        this.akas = akas;
-    }
-
-    public List<TitlePrincipalDTO> getPrincipals() {
-        return principals;
-    }
-
-    public void setPrincipals(List<TitlePrincipalDTO> principals) {
-        this.principals = principals;
-    }
-
-    public List<TitleEpisodeDTO> getEpisodes() {
-        return episodes;
-    }
-
-    public void setEpisodes(List<TitleEpisodeDTO> episodes) {
-        this.episodes = episodes;
     }
 
     public TitleRatingDTO getRatings() {
