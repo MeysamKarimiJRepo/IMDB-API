@@ -33,11 +33,17 @@ public interface TitleBasicRepository extends JpaRepository<TitleBasic, String> 
     List<TitleBasic> findCommonTitles(@Param("actor1") String actor1, @Param("actor2") String actor2);
 
 
-    @Query("SELECT t FROM TitleBasic t " +
-            "JOIN t.genres g " +
-            "JOIN TitleRating r ON t.tconst = r.titleBasic.tconst " +
-            "WHERE g.name = :genre " +
-            "ORDER BY r.numVotes DESC, r.averageRating DESC")
-    List<TitleBasic> findBestTitlesByGenre(@Param("genre") String genre);
+    @Query(value = "SELECT * FROM ( " +
+            "SELECT t.*, " +
+            "ROW_NUMBER() OVER (PARTITION BY t.start_year ORDER BY r.num_votes DESC, r.average_rating DESC) as row_num " +
+            "FROM title_basic t " +
+            "JOIN title_genres g ON t.tconst = g.tconst " +
+            "JOIN genre genre ON g.genre_id = genre.id " +
+            "JOIN title_rating r ON t.tconst = r.tconst " +
+            "WHERE genre.name = :genre " +
+            ") subquery " +
+            "WHERE subquery.row_num = 1 " +
+            "ORDER BY subquery.start_year", nativeQuery = true)
+    List<TitleBasic> findBestTitlesByGenreAndYear(@Param("genre") String genre);
 
 }
