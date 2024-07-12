@@ -3,7 +3,7 @@ package com.imdb.ws.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "title_principal")
+@Table(name = "title_principal",uniqueConstraints = { @UniqueConstraint(columnNames = { "tconst", "ordering" }) })
 public class TitlePrincipal {
 
     @Id
