@@ -199,7 +199,7 @@ public class DataLoaderService {
                     }
 
 
-                    printTheProgressOfLoading(currentLine, startLine, totalLines, "%s %s Progress: %.2f%%", fileName);
+                    printTheProgressOfLoading(currentLine, startLine, totalLines, fileName);
                 } catch (Exception e) {
                     printLineCausedError(e.toString(), fileName, line);
                     throw new RuntimeException(e);
@@ -211,7 +211,8 @@ public class DataLoaderService {
         }
     }
 
-    private void printTheProgressOfLoading(long currentLine, long startLine, long endLine, String format, String fileName) {
+    private void printTheProgressOfLoading(long currentLine, long startLine, long endLine, String fileName) {
+        String format = "%s %s Progress: %.2f%%";
         if (currentLine % batchSize == 0 || currentLine == endLine - startLine + 1) {
             double progress = ((double) (currentLine - startLine + 1) / (endLine - startLine + 1)) * 100.0;
             logger.info(String.format(format, Thread.currentThread().getName(), fileName, progress));
@@ -257,7 +258,7 @@ public class DataLoaderService {
                         titleAkasBatch.clear();
                     }
 
-                    printTheProgressOfLoading(currentLine, startLine, totalLines, "%s Progress: %.2f%%", fileName);
+                    printTheProgressOfLoading(currentLine, startLine, totalLines, fileName);
                 } catch (Exception e) {
                     printLineCausedError(e.toString(), fileName, line);
                     throw new RuntimeException(e);
@@ -308,7 +309,7 @@ public class DataLoaderService {
                         titleEpisodeBatch.clear();
                     }
 
-                    printTheProgressOfLoading(currentLine, startLine, totalLines, "%s Progress: %.2f%%", fileName);
+                    printTheProgressOfLoading(currentLine, startLine, totalLines, fileName);
                 } catch (Exception e) {
                     printLineCausedError(e.toString(), fileName, line);
                     throw new RuntimeException(e);
@@ -368,7 +369,7 @@ public class DataLoaderService {
                         titlePrincipalBatch.clear();
                     }
 
-                    printTheProgressOfLoading(currentLine, startLine, totalLines, "%s Progress: %.2f%%", fileName);
+                    printTheProgressOfLoading(currentLine, startLine, totalLines, fileName);
                 } catch (Exception e) {
                     printLineCausedError(e.toString(), fileName, line);
                     throw new RuntimeException(e);
@@ -413,7 +414,7 @@ public class DataLoaderService {
                     }
 
 
-                    printTheProgressOfLoading(currentLine, startLine, totalLines, "%s Progress: %.2f%%", fileName);
+                    printTheProgressOfLoading(currentLine, startLine, totalLines, fileName);
                 } catch (Exception e) {
                     printLineCausedError(e.toString(), fileName, line);
                     throw new RuntimeException(e);
@@ -460,7 +461,7 @@ public class DataLoaderService {
                         personBatch.clear();
                     }
 
-                    printTheProgressOfLoading(currentLine, startLine, totalLines, "5s Progress: %.2f%%", fileName);
+                    printTheProgressOfLoading(currentLine, startLine, totalLines, fileName);
                 } catch (Exception e) {
                     printLineCausedError(e.toString(), fileName, line);
                     throw new RuntimeException(e);
