@@ -26,8 +26,8 @@ public interface TitleBasicRepository extends JpaRepository<TitleBasic, String> 
     @Query("SELECT t FROM TitleBasic t " +
             "JOIN TitlePrincipal p1 ON t.tconst = p1.titleBasic.tconst " +
             "JOIN TitlePrincipal p2 ON t.tconst = p2.titleBasic.tconst " +
-            "WHERE p1.person.nconst = :actor1 " +
-            "AND p2.person.nconst = :actor2 " +
+            "WHERE p1.person.primaryName = :actor1 " +
+            "AND p2.person.primaryName = :actor2 " +
             "AND p1.category.name = 'actor' " +
             "AND p2.category.name = 'actor'")
     List<TitleBasic> findCommonTitles(@Param("actor1") String actor1, @Param("actor2") String actor2);
